@@ -1,0 +1,8 @@
+[
+  { "title": "Aurora Drift",   "medium": "Acrylic", "year": 2022, "color": "tomato" },
+  { "title": "River Dream",    "medium": "Ink",     "year": 2023, "color": "royalblue" },
+  { "title": "Kluane Sky",     "medium": "Digital", "year": 2024, "color": "turquoise" },
+  { "title": "Studio Night",   "medium": "Digital", "year": 2021, "color": "goldenrod" },
+  { "title": "Faint Aurora",   "medium": "Acrylic", "year": 2020, "color": "purple", "image": "data/Crocus2024_ObjVector_21.1889_sm_for_Susie.png" },
+  { "title": "Garbage",   "medium": "Generative", "year": 2025, "color": "black", "image": "data/Crocus2024_ObjVector_21.1889_sm_for_Susie.png" }
+]
