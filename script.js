@@ -1,41 +1,158 @@
-const gallery   = document.querySelector("#gallery");
-const statusEl  = document.querySelector("#status");
+const gallery      = document.querySelector("#gallery");
+const statusEl     = document.querySelector("#status");
 
-const sortBtn   = document.querySelector("#sortYear");
-const filterBtn = document.querySelector("#filterDigital");
-const shuffleBtn= document.querySelector("#shuffle");
-const resetBtn  = document.querySelector("#reset");
+const mediumSelect = document.querySelector("#mediumSelect");
+const sortSelect   = document.querySelector("#sortSelect");
+const showImages   = document.querySelector("#showImages");
 
-let data = [];  // full dataset from JSON
-let view = [];  // what we're currently showing
+// Source data (never mutate)
+let data = [];
 
-init(); // standard entry point
+// App state (single source of truth for UI)
+const state = {
+  medium: "All",
+  sort: "yearAsc",
+  images: true
+};
+
+init();
 
 async function init() {
-  showStatus("Loading artworks…");
+  showStatus("Loading…");
+
   try {
     const res = await fetch("data/artworks.json");
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}`);
-    }
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     data = await res.json();
-    // Apply URL filter if present eg http://127.0.0.1:5500/index.html?medium=Digital
-    const params = new URLSearchParams(location.search);
-    const mediumFilter = params.get("medium");
 
-    if (mediumFilter) {
-    view = data.filter(a => a.medium === mediumFilter);
-    } else {
-    view = data.slice();
-    }
-    render(view);
+    // 1) Read URL params -> state
+    hydrateStateFromURL();
+
+    // 2) Build UI from data + state
+    populateMediumOptions(data);
+    applyStateToControls();
+
+    // 3) Render based on state
+    updateView();
+
+    // 4) Wire event handlers
+    wireControls();
+
     hideStatus();
-
   } catch (err) {
     console.error(err);
-    showStatus("Failed to load artworks.", true);
+    showStatus("Failed to load data.", true);
   }
 }
+
+function wireControls() {
+  mediumSelect.addEventListener("change", () => {
+    state.medium = mediumSelect.value;
+    syncURLFromState();
+    updateView();
+  });
+
+  sortSelect.addEventListener("change", () => {
+    state.sort = sortSelect.value;
+    syncURLFromState();
+    updateView();
+  });
+
+  showImages.addEventListener("change", () => {
+    state.images = showImages.checked;
+    syncURLFromState();
+    updateView();
+  });
+}
+
+/* ---------- State <-> URL ---------- */
+
+function hydrateStateFromURL() {
+  const params = new URLSearchParams(location.search);
+
+  // medium: string
+  state.medium = params.get("medium") ?? "All";
+
+  // sort: one of known values
+  state.sort = params.get("sort") ?? "yearAsc";
+
+  // images: "1" or "0" (default true)
+  const img = params.get("images");
+  state.images = img === null ? true : img === "1";
+}
+
+function syncURLFromState() {
+  const params = new URLSearchParams();
+
+  // Only include non-defaults (keeps URL clean)
+  if (state.medium !== "All") params.set("medium", state.medium);
+  if (state.sort !== "yearAsc") params.set("sort", state.sort);
+  if (state.images !== true) params.set("images", "0");
+
+  const newUrl = `${location.pathname}${params.toString() ? "?" + params.toString() : ""}`;
+  history.replaceState(null, "", newUrl);
+}
+
+/* ---------- Controls ---------- */
+
+function populateMediumOptions(list) {
+  // gather unique mediums
+  const mediums = Array.from(new Set(list.map(a => a.medium))).sort((a,b) => a.localeCompare(b));
+
+  // keep "All" and rebuild others
+  mediumSelect.innerHTML = `<option value="All">All</option>`;
+  mediums.forEach(m => {
+    const opt = document.createElement("option");
+    opt.value = m;
+    opt.textContent = m;
+    mediumSelect.appendChild(opt);
+  });
+}
+
+function applyStateToControls() {
+  // If URL asked for a medium not in data, fall back to All
+  const mediumValues = Array.from(mediumSelect.options).map(o => o.value);
+  if (!mediumValues.includes(state.medium)) state.medium = "All";
+
+  mediumSelect.value = state.medium;
+  sortSelect.value = state.sort;
+  showImages.checked = state.images;
+}
+
+/* ---------- View pipeline ---------- */
+
+function updateView() {
+  let view = data.slice();
+
+  // filter
+  if (state.medium !== "All") {
+    view = view.filter(a => a.medium === state.medium);
+  }
+
+  // sort
+  view = sortByState(view);
+
+  render(view);
+}
+
+function sortByState(list) {
+  const a = list.slice();
+
+  switch (state.sort) {
+    case "yearAsc":
+      return a.sort((x, y) => x.year - y.year);
+    case "yearDesc":
+      return a.sort((x, y) => y.year - x.year);
+    case "titleAsc":
+      return a.sort((x, y) => x.title.toLowerCase().localeCompare(y.title.toLowerCase()));
+    case "titleDesc":
+      return a.sort((x, y) => y.title.toLowerCase().localeCompare(x.title.toLowerCase()));
+    default:
+      return a;
+  }
+}
+
+/* ---------- Render ---------- */
 
 function render(list) {
   gallery.innerHTML = "";
@@ -48,21 +165,25 @@ function render(list) {
   list.forEach(art => {
     const card = document.createElement("div");
     card.className = "card";
+    card.style.borderColor = art.color || "#1bb694";
 
-    card.style.setProperty("--bg-image", art.image ? `url(${art.image})` : "none");
+    const imgHtml = (state.images && art.image)
+      ? `<img class="thumb" src="${art.image}" alt="" loading="lazy">`
+      : "";
 
     card.innerHTML = `
-      <div class="card-body">
-        <h3>${art.title}</h3>
-        <p>${art.medium} • ${art.year}</p>
-      </div>
+      ${imgHtml}
+      <h3>${art.title}</h3>
+      <p><b>Medium:</b> ${art.medium}</p>
+      <p><b>Year:</b> ${art.year}</p>
     `;
 
     gallery.appendChild(card);
   });
 }
 
-// Status helpers
+/* ---------- Status helpers ---------- */
+
 function showStatus(msg, isError = false) {
   statusEl.textContent = msg;
   statusEl.style.color = isError ? "tomato" : "#333";
@@ -71,39 +192,4 @@ function showStatus(msg, isError = false) {
 
 function hideStatus() {
   statusEl.classList.remove("show");
-}
-
-// Button event handlers____________________________________
-// Sort by year (ascending)
-sortBtn.addEventListener("click", () => {
-  view = view.slice().sort((a, b) => a.year - b.year);
-  render(view);
-});
-
-// Filter to Digital medium only
-filterBtn.addEventListener("click", () => {
-  view = data.filter(a => a.medium === "Digital");
-  render(view);
-});
-
-// Shuffle current view
-shuffleBtn.addEventListener("click", () => {
-  view = shuffleArray(view);
-  render(view);
-});
-
-// Reset to original data
-resetBtn.addEventListener("click", () => {
-  view = data.slice();
-  render(view);
-});
-
-// Fisher–Yates shuffle (returns a new array)
-function shuffleArray(arr) {
-  const a = arr.slice();
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
 }

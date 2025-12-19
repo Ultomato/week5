@@ -3,24 +3,41 @@
   <html lang="en">
   <meta charset="UTF-8">
   <meta name="robots" content="noai, noimageai">
-  <title>Sam Skinner Art Week 4 Data Render</title>
+  <title>Week 5</title>
   <link rel="stylesheet" href="site.css">
 </head>
 
 <body>
-  <h1>Sam’s Week 4 Artworks</h1>
+  <h1>Week 5 — State + Controls + URL Params</h1>
 
   <div id="controls">
-    <button id="sortYear">Sort by Year</button>
-    <button id="filterDigital">Filter Digital</button>
-    <button id="shuffle">Shuffle</button>
-    <button id="reset">Reset</button>
+    <label>
+      Medium:
+      <select id="mediumSelect">
+        <option value="All">All</option>
+      </select>
+    </label>
+
+    <label>
+      Sort:
+      <select id="sortSelect">
+        <option value="yearAsc">Year ↑</option>
+        <option value="yearDesc">Year ↓</option>
+        <option value="titleAsc">Title A→Z</option>
+        <option value="titleDesc">Title Z→A</option>
+      </select>
+    </label>
+
+    <label class="check">
+      <input type="checkbox" id="showImages" checked>
+      Show images (if available)
+    </label>
   </div>
 
   <div id="status" aria-live="polite"></div>
-
-  <div id="gallery" class="grid">grid 1</div>
+  <div id="gallery" class="grid"></div>
 
   <script src="script.js"></script>
 </body>
+
 
