@@ -1,8 +1,8 @@
 [
-  { "title": "Aurora Drift",   "medium": "Acrylic", "year": 2022, "color": "tomato" },
-  { "title": "River Dream",    "medium": "Ink",     "year": 2023, "color": "royalblue" },
-  { "title": "Kluane Sky",     "medium": "Digital", "year": 2024, "color": "turquoise" },
-  { "title": "Studio Night",   "medium": "Digital", "year": 2021, "color": "goldenrod" },
-  { "title": "Faint Aurora",   "medium": "Acrylic", "year": 2020, "color": "purple", "image": "data/Crocus2024_ObjVector_21.1889_sm_for_Susie.png" },
-  { "title": "Garbage",   "medium": "Generative", "year": 2025, "color": "black", "image": "data/Crocus2024_ObjVector_21.1889_sm_for_Susie.png" }
+  { "title": "Aurora Drift",   "medium": "Acrylic", "year": 2022, "color": "tomato", "image": "data/3D_Ring_Ejector_15.24_0_1.png"  },
+  { "title": "River Dream",    "medium": "Ink",     "year": 2023, "color": "royalblue", "image": "data/Bauhaus1200x1800.png"  },
+  { "title": "Kluane Sky",     "medium": "Digital", "year": 2024, "color": "turquoise", "image": "data/Crocus2024_ObjVector_21.1889_sm_for_Susie.png"  },
+  { "title": "Studio Night",   "medium": "Generative", "year": 2021, "color": "goldenrod", "image": "data/3D_Ring_Ejector_281_0_2.png"  },
+  { "title": "Faint Aurora",   "medium": "Acrylic", "year": 2020, "color": "purple", "image": "data/Mountain_Tunnel_1(39).png" },
+  { "title": "Garbage",   "medium": "Generative", "year": 2025, "color": "black", "image": "data/Mountain_Tunnel_1(42).png" }
 ]
