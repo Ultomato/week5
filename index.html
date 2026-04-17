@@ -27,11 +27,22 @@
         <option value="titleDesc">Title Z→A</option>
       </select>
     </label>
+    <div id="mediumCheckboxes"></div>
 
     <label class="check">
       <input type="checkbox" id="showImages" checked>
       Show images (if available)
     </label>
+    <button id="clearFilters">Clear Filters</button>
+  </div>
+  <div id="summary">
+    <div id="countLine"></div>
+    <div id="activeFilters"></div>
+    <div class="meter" aria-hidden="true">
+      <div id="meterFill" class="meter-fill"></div>
+    </div>
+    <div id="percentLine"></div>
+    <div id="mediumCounts"></div>
   </div>
 
   <div id="status" aria-live="polite"></div>

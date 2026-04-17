@@ -42,14 +42,41 @@ h1 {
   opacity: 1;
 }
 
+#summary {
+  margin: 0.25rem 0 0.75rem;
+  font-size: 0.95rem;
+}
+
+#countLine {
+  font-weight: 600;
+}
+
+#activeFilters {
+  opacity: 0.8;
+}
+
+.meter {
+  height: 10px;
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 0.35rem 0 0.25rem;
+}
+
+.meter-fill {
+  height: 100%;
+  width: 0%;
+  background: #1bb694;
+  transition: width 0.25s ease;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 0.75rem;
 }
 
-
-.card{
+.card {
   position: relative;
   border: 2px solid #1bb694;
   border-radius: 10px;
@@ -60,35 +87,35 @@ h1 {
 }
 
 /* 1) image layer (blurred by default) */
-.card::before{
-  content:"";
-  position:absolute;
-  inset:0;
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
   background-image: var(--bg-image);
   background-size: cover;
   background-position: center;
   filter: blur(8px);
-  transform: scale(1.08);            /* prevents blur edges */
+  transform: scale(1.08); /* prevents blur edges */
   transition: filter 0.35s ease;
   z-index: 0;
 }
 
 /* 2) dark gradient overlay */
-.card::after{
-  content:"";
-  position:absolute;
-  inset:0;
+.card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
   background: linear-gradient(
     to bottom,
-    rgba(0,0,0,0.15),
-    rgba(0,0,0,0.65)
+    rgba(0, 0, 0, 0.15),
+    rgba(0, 0, 0, 0.65)
   );
   z-index: 1;
   pointer-events: none;
 }
 
 /* 3) text sits above both layers */
-.card-body{
+.card-body {
   position: absolute;
   left: 0;
   right: 0;
@@ -97,10 +124,14 @@ h1 {
   z-index: 2;
 }
 
-.card-body h3{ margin: 0 0 0.25rem; }
-.card-body p{ margin: 0; }
+.card-body h3 {
+  margin: 0 0 0.25rem;
+}
+.card-body p {
+  margin: 0;
+}
 
 /* 4) on hover, remove blur */
-.card:hover::before{
+.card:hover::before {
   filter: blur(0);
 }

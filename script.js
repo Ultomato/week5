@@ -1,18 +1,26 @@
-const gallery      = document.querySelector("#gallery");
-const statusEl     = document.querySelector("#status");
+const gallery = document.querySelector("#gallery");
+const statusEl = document.querySelector("#status");
 
 const mediumSelect = document.querySelector("#mediumSelect");
-const sortSelect   = document.querySelector("#sortSelect");
-const showImages   = document.querySelector("#showImages");
+const sortSelect = document.querySelector("#sortSelect");
+const showImages = document.querySelector("#showImages");
+const countLine = document.querySelector("#countLine");
+const meterFill = document.querySelector("#meterFill");
+const percentLine = document.querySelector("#percentLine");
+const activeFilters = document.querySelector("#activeFilters");
+const clearFilters = document.querySelector("#clearFilters");
+const mediumCounts = document.querySelector("#mediumCounts");
+const mediumCheckboxes = document.querySelector("#mediumCheckboxes");
 
 // Source data (never mutate)
 let data = [];
 
 // App state (single source of truth for UI)
 const state = {
-  medium: "All",
+  mediums: [], // for checkbox filtering.
+  //medium: "All", //original
   sort: "yearAsc",
-  images: true
+  images: true,
 };
 
 init();
@@ -24,25 +32,26 @@ async function init() {
     const res = await fetch("data/artworks.json");
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     data = await res.json();
-
-    // 1) Read URL params -> state
-    hydrateStateFromURL();
-
-    // 2) Build UI from data + state
-    populateMediumOptions(data);
-    applyStateToControls();
-
-    // 3) Render based on state
-    updateView();
-
-    // 4) Wire event handlers
-    wireControls();
-
-    hideStatus();
   } catch (err) {
     console.error(err);
     showStatus("Failed to load data.", true);
   }
+  // 1) Read URL params -> state
+  hydrateStateFromURL();
+
+  // 2) Build UI from data + state
+  populateMediumOptions(data); // this is a bit redundant with line below and could be removed
+  populateMediumCheckboxes(data);
+  applyStateToControls();
+  updateMediumCounts();
+
+  // 3) Render based on state
+  updateView();
+
+  // 4) Wire event handlers
+  wireControls();
+
+  hideStatus();
 }
 
 function wireControls() {
@@ -63,6 +72,16 @@ function wireControls() {
     syncURLFromState();
     updateView();
   });
+
+  clearFilters.addEventListener("click", () => {
+    state.medium = "All";
+    state.sort = "yearAsc";
+    state.images = true;
+
+    applyStateToControls();
+    syncURLFromState();
+    updateView();
+  });
 }
 
 /* ---------- State <-> URL ---------- */
@@ -71,7 +90,9 @@ function hydrateStateFromURL() {
   const params = new URLSearchParams(location.search);
 
   // medium: string
-  state.medium = params.get("medium") ?? "All";
+  //state.medium = params.get("medium") ?? "All"; //original for drop-down only
+  const mediumParam = params.get("mediums");
+  state.mediums = mediumParam ? mediumParam.split(",") : [];
 
   // sort: one of known values
   state.sort = params.get("sort") ?? "yearAsc";
@@ -85,7 +106,10 @@ function syncURLFromState() {
   const params = new URLSearchParams();
 
   // Only include non-defaults (keeps URL clean)
-  if (state.medium !== "All") params.set("medium", state.medium);
+  // if (state.medium !== "All") params.set("medium", state.medium); //original for drop-down filter only
+  if (state.mediums.length) {
+    params.set("mediums", state.mediums.join(","));
+  }
   if (state.sort !== "yearAsc") params.set("sort", state.sort);
   if (state.images !== true) params.set("images", "0");
 
@@ -97,11 +121,13 @@ function syncURLFromState() {
 
 function populateMediumOptions(list) {
   // gather unique mediums
-  const mediums = Array.from(new Set(list.map(a => a.medium))).sort((a,b) => a.localeCompare(b));
+  const mediums = Array.from(new Set(list.map((a) => a.medium))).sort((a, b) =>
+    a.localeCompare(b),
+  );
 
   // keep "All" and rebuild others
   mediumSelect.innerHTML = `<option value="All">All</option>`;
-  mediums.forEach(m => {
+  mediums.forEach((m) => {
     const opt = document.createElement("option");
     opt.value = m;
     opt.textContent = m;
@@ -111,7 +137,7 @@ function populateMediumOptions(list) {
 
 function applyStateToControls() {
   // If URL asked for a medium not in data, fall back to All
-  const mediumValues = Array.from(mediumSelect.options).map(o => o.value);
+  const mediumValues = Array.from(mediumSelect.options).map((o) => o.value);
   if (!mediumValues.includes(state.medium)) state.medium = "All";
 
   mediumSelect.value = state.medium;
@@ -124,13 +150,18 @@ function applyStateToControls() {
 function updateView() {
   let view = data.slice();
 
-  // filter
-  if (state.medium !== "All") {
-    view = view.filter(a => a.medium === state.medium);
+  // original filter for drop-down only
+  // if (state.medium !== "All") {
+  //   view = view.filter((a) => a.medium === state.medium);
+  // }
+  // replacement for checkbox filter
+  if (state.mediums.length) {
+    view = view.filter((a) => state.mediums.includes(a.medium));
   }
 
   // sort
   view = sortByState(view);
+  updateSummary(view);
 
   render(view);
 }
@@ -144,9 +175,13 @@ function sortByState(list) {
     case "yearDesc":
       return a.sort((x, y) => y.year - x.year);
     case "titleAsc":
-      return a.sort((x, y) => x.title.toLowerCase().localeCompare(y.title.toLowerCase()));
+      return a.sort((x, y) =>
+        x.title.toLowerCase().localeCompare(y.title.toLowerCase()),
+      );
     case "titleDesc":
-      return a.sort((x, y) => y.title.toLowerCase().localeCompare(x.title.toLowerCase()));
+      return a.sort((x, y) =>
+        y.title.toLowerCase().localeCompare(x.title.toLowerCase()),
+      );
     default:
       return a;
   }
@@ -162,14 +197,15 @@ function render(list) {
     return;
   }
 
-  list.forEach(art => {
+  list.forEach((art) => {
     const card = document.createElement("div");
     card.className = "card";
     card.style.borderColor = art.color || "#1bb694";
 
-    const imgHtml = (state.images && art.image)
-      ? `<img class="thumb" src="${art.image}" alt="" loading="lazy">`
-      : "";
+    const imgHtml =
+      state.images && art.image
+        ? `<img class="thumb" src="${art.image}" alt="" loading="lazy">`
+        : "";
 
     card.innerHTML = `
       ${imgHtml}
@@ -192,4 +228,87 @@ function showStatus(msg, isError = false) {
 
 function hideStatus() {
   statusEl.classList.remove("show");
+}
+
+function updateSummary(view) {
+  // 1) X of Y
+  countLine.textContent = `Showing ${view.length} of ${data.length} artworks`;
+  const pct = data.length ? (view.length / data.length) * 100 : 0;
+  meterFill.style.width = `${pct}%`;
+  percentLine.textContent = `${Math.round(pct)}% of artworks showing`;
+
+  // 2) Active filter summary
+  const parts = [];
+
+  if (state.medium === "All") parts.push("Medium: All");
+  else parts.push(`Medium: ${state.medium}`);
+
+  parts.push(`Sort: ${labelSort(state.sort)}`);
+
+  parts.push(state.images ? "Images: On" : "Images: Off");
+
+  activeFilters.textContent = parts.join(" | ");
+}
+
+function labelSort(sortKey) {
+  switch (sortKey) {
+    case "yearAsc":
+      return "Year ↑";
+    case "yearDesc":
+      return "Year ↓";
+    case "titleAsc":
+      return "Title A→Z";
+    case "titleDesc":
+      return "Title Z→A";
+    default:
+      return sortKey;
+  }
+}
+
+function updateMediumCounts() {
+  const counts = {};
+
+  data.forEach((art) => {
+    counts[art.medium] = (counts[art.medium] || 0) + 1;
+  });
+
+  const parts = Object.entries(counts)
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([medium, count]) => `${medium} (${count})`);
+
+  mediumCounts.textContent = parts.join(" | ");
+}
+
+function populateMediumCheckboxes(list) {
+  const mediums = Array.from(new Set(list.map((a) => a.medium))).sort((a, b) =>
+    a.localeCompare(b),
+  );
+
+  mediumCheckboxes.innerHTML = "";
+
+  mediums.forEach((medium) => {
+    const label = document.createElement("label");
+    label.style.marginRight = "0.75rem";
+
+    label.innerHTML = `
+      <input type="checkbox" value="${medium}">
+      ${medium}
+    `;
+
+    const input = label.querySelector("input");
+
+    input.checked = state.mediums.includes(medium);
+
+    input.addEventListener("change", () => {
+      const checkedValues = Array.from(
+        mediumCheckboxes.querySelectorAll("input:checked"),
+      ).map((input) => input.value);
+
+      state.mediums = checkedValues;
+      syncURLFromState();
+      updateView();
+    });
+
+    mediumCheckboxes.appendChild(label);
+  });
 }
